@@ -40,6 +40,16 @@ export function isAppError(value: unknown): value is AppError {
 export function toAppError(value: unknown, fallback: ErrorCode = "UXR-INT-001"): AppError {
   if (isAppError(value)) return value;
   const message = value instanceof Error ? value.message : String(value);
+
+  if (fallback === "UXR-INT-001") {
+    if (
+      message.includes("Not authorized for performing UI testing actions") ||
+      message.includes("XCTDaemonErrorDomain Code=41")
+    ) {
+      return new AppError("UXR-DEV-004", message, { cause: value });
+    }
+  }
+
   return new AppError(fallback, message, { cause: value });
 }
 

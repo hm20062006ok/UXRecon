@@ -86,6 +86,18 @@ describe("toAppError", () => {
     expect(converted.title).toBe("Appium server unreachable");
   });
 
+  it("automatically maps UI testing authorization failure to UXR-DEV-004", () => {
+    const lockError = new Error(
+      'Error Domain=XCTDaemonErrorDomain Code=41 "Not authorized for performing UI testing actions."',
+    );
+    const converted = toAppError(lockError);
+
+    expect(converted).toBeInstanceOf(AppError);
+    expect(converted.code).toBe("UXR-DEV-004");
+    expect(converted.title).toBe("Device screen is locked or unauthorized for UI testing");
+    expect(converted.hint).toContain("Unlock your iPhone screen");
+  });
+
   it("converts non-Error values (strings, numbers, objects) and preserves value in cause", () => {
     const stringError = toAppError("fatal string error", "UXR-CFG-002");
     expect(stringError).toBeInstanceOf(AppError);
@@ -175,6 +187,7 @@ describe("errorCatalog", () => {
       "UXR-DEV-001",
       "UXR-DEV-002",
       "UXR-DEV-003",
+      "UXR-DEV-004",
       "UXR-DOC-001",
       "UXR-CLI-001",
       "UXR-CLI-002",

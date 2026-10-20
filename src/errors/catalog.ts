@@ -41,6 +41,10 @@ export const errorCatalog = {
     title: "Target app is not installed",
     hint: "Install the app on the device, or correct app.bundleId.",
   },
+  "UXR-DEV-004": {
+    title: "Device screen is locked or unauthorized for UI testing",
+    hint: "Unlock your iPhone screen with passcode/Face ID, keep the target App in the foreground, and prevent the screen from sleeping (Settings -> Display & Brightness -> Auto-Lock -> Never).",
+  },
   "UXR-DOC-001": {
     title: "Doctor found blocking problems",
     hint: "Fix the checks marked FAIL, then run `uxr doctor` again.",
