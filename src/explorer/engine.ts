@@ -16,6 +16,8 @@ import { RecoveryLadder } from "../recovery/index.js";
 import {
   BoundaryGuard,
   defaultRejectConfirmHandler,
+  generateSmartFormValue,
+  promptUserForFormField,
   SafetyRulesEngine,
   type ConfirmHandler,
 } from "../safety/index.js";
@@ -147,6 +149,9 @@ export class RecursiveExplorer {
     const pageStack: PageState[] = [];
     let stopReason = "Completed exploration";
 
+    this.actionSequence += 1;
+    let currentObs = await this.captureObservation(this.actionSequence);
+
     try {
       while (!this.isInterrupted) {
         // 1. Check Limits
@@ -169,12 +174,13 @@ export class RecursiveExplorer {
             expected: this.config.app.bundleId,
           });
           await this.device.restartApp(this.config.app.bundleId);
+          this.actionSequence += 1;
+          currentObs = await this.captureObservation(this.actionSequence);
         }
 
-        // 3. Observe Device
-        this.actionSequence += 1;
+        // 3. Current Screen Observation
+        const obs = currentObs;
         const currentDepth = pageStack.length;
-        const obs = await this.captureObservation(this.actionSequence);
 
         // 4. Parse & Register Page
         const parsed = parsePageSource(await this.device.getPageSource().catch(() => ""));
@@ -285,6 +291,7 @@ export class RecursiveExplorer {
         pageState.visitedActionKeys.push(actionKey);
 
         // 8. Observe Post-Action
+        await new Promise((resolve) => setTimeout(resolve, 800));
         this.actionSequence += 1;
         const postObs = await this.captureObservation(this.actionSequence);
         const postParsed = parsePageSource(await this.device.getPageSource().catch(() => ""));
@@ -296,6 +303,9 @@ export class RecursiveExplorer {
           postParsed.elements,
           postInteractive,
         );
+
+        // Advance current observation for the next exploration step
+        currentObs = postObs;
 
         // 9. Back Restoration Check (P8-T1)
         if (plannedAction.kind === "back") {
@@ -397,10 +407,31 @@ export class RecursiveExplorer {
     switch (action.kind) {
       case "tap":
         return target ? this.device.tap(target) : { success: false, error: "Missing target element for tap" };
-      case "type":
-        return target
-          ? this.device.typeText(target, action.inputText ?? "test")
-          : { success: false, error: "Missing target element for type" };
+      case "type": {
+        if (!target) {
+          return { success: false, error: "Missing target element for type" };
+        }
+        const fieldLabel = target.label || target.name || target.value || "";
+        const isPassword = target.type === "XCUIElementTypeSecureTextField";
+        const textToType =
+          action.inputText ?? generateSmartFormValue(fieldLabel, action.inputPurpose, isPassword);
+        this.logger.info(`Auto-filling form input into "${fieldLabel || "field"}"`, {
+          target: fieldLabel,
+          textLength: textToType.length,
+          purpose: action.inputPurpose,
+        });
+        return this.device.typeText(target, textToType);
+      }
+      case "ask_user": {
+        if (!target) {
+          return { success: false, error: "Missing target element for ask_user" };
+        }
+        const fieldName = target.label || target.name || target.value || "Form Field";
+        const isPassword = target.type === "XCUIElementTypeSecureTextField";
+        this.logger.info(`Prompting user for field input: "${fieldName}"`, { purpose: action.inputPurpose });
+        const userInput = await promptUserForFormField(fieldName, action.inputPurpose, isPassword);
+        return this.device.typeText(target, userInput);
+      }
       case "clear":
         return target
           ? this.device.clearText(target)

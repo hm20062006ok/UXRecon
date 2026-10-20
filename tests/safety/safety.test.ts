@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CONFIRM_KEYWORDS, DEFAULT_DENY_KEYWORDS } from "../../src/config/schema.js";
-import { BoundaryGuard, defaultRejectConfirmHandler, SafetyRulesEngine } from "../../src/safety/index.js";
+import {
+  BoundaryGuard,
+  defaultRejectConfirmHandler,
+  generateSmartFormValue,
+  SafetyRulesEngine,
+} from "../../src/safety/index.js";
 import type { PlannedAction, UIElement } from "../../src/types/contracts.js";
 
 const DEFAULT_SAFETY_CONFIG = {
@@ -212,5 +217,21 @@ describe("ConfirmHandler", () => {
       reason: "High risk test",
     });
     expect(result).toBe(false);
+  });
+});
+
+describe("generateSmartFormValue", () => {
+  it("generates appropriate form values for wallet, password, email, and search fields", () => {
+    expect(generateSmartFormValue("Wallet Name")).toBe("MyWallet_01");
+    expect(generateSmartFormValue("钱包名称")).toBe("MyWallet_01");
+
+    const password = generateSmartFormValue("Set Password", "", true);
+    expect(password).toBe("Pass123456!");
+
+    const repeatPassword = generateSmartFormValue("Confirm Password");
+    expect(repeatPassword).toBe(password);
+
+    expect(generateSmartFormValue("Email Address")).toBe("demo@example.com");
+    expect(generateSmartFormValue("Search Tokens")).toBe("USDT");
   });
 });

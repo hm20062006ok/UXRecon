@@ -26,12 +26,16 @@ export function buildPlannerPrompt(context: PlanContext): string {
     instructions: [
       "1. Prioritize userGoal: If the goal specifies navigating to a section (e.g. '点击 Assets -- I don't have a wallet'), find that element and tap it first.",
       "2. Once inside the target flow/page, systematically explore its interactive buttons, tabs, input fields, and options to capture the complete UX specification.",
-      "3. Provide 'agentThought' detailing your strategic reasoning and understanding of the current state towards the userGoal.",
-      "4. Provide 'screenDescription' concisely describing what this screen does and its visual components.",
-      "5. Specify 'targetElementId' or 'targetSemanticId' from availableElements and explain 'reason' and 'expectedEffect'.",
-      "6. Allowed action kinds: 'tap', 'type', 'clear', 'scroll', 'back', 'dismiss_keyboard', 'stop'.",
-      "7. When the userGoal has been fully fulfilled and all key interactions on target pages are documented, return kind: 'stop' with a descriptive reason.",
-      "8. Return ONLY valid JSON matching the schema.",
+      "3. Form Input Handling: When you encounter text/password fields (TextField, SecureTextField, wallet name, password, etc.):",
+      "   - Use kind: 'type' with 'inputText' and 'inputPurpose' (or leave inputText undefined to let the engine auto-fill realistic values).",
+      "   - Or use kind: 'ask_user' with 'inputPurpose' if you want the CLI to prompt the human user in the terminal.",
+      "   - Systematically fill all required inputs on forms and tap submit/next to explore the full flow.",
+      "4. Provide 'agentThought' detailing your strategic reasoning and understanding of the current state towards the userGoal.",
+      "5. Provide 'screenDescription' concisely describing what this screen does and its visual components.",
+      "6. Specify 'targetElementId' or 'targetSemanticId' from availableElements and explain 'reason' and 'expectedEffect'.",
+      "7. Allowed action kinds: 'tap', 'type', 'clear', 'scroll', 'back', 'dismiss_keyboard', 'ask_user', 'stop'.",
+      "8. When the userGoal has been fully fulfilled and all key interactions on target pages are documented, return kind: 'stop' with a descriptive reason.",
+      "9. Return ONLY valid JSON matching the schema.",
     ],
   };
 
