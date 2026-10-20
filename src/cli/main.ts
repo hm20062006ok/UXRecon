@@ -16,6 +16,7 @@ interface CliArgs {
   maxPages?: number | undefined;
   maxActions?: number | undefined;
   maxDepth?: number | undefined;
+  startAction?: string | undefined;
 }
 
 function parseCliArgs(args: string[]): CliArgs {
@@ -28,6 +29,7 @@ function parseCliArgs(args: string[]): CliArgs {
   let maxPages: number | undefined;
   let maxActions: number | undefined;
   let maxDepth: number | undefined;
+  let startAction: string | undefined;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i]!;
@@ -48,6 +50,13 @@ function parseCliArgs(args: string[]): CliArgs {
     } else if (arg === "--max-depth") {
       i += 1;
       maxDepth = Number(args[i]);
+    } else if (arg === "--start-action" || arg === "--initial-tap") {
+      i += 1;
+      if (i < args.length) {
+        startAction = args[i];
+      } else {
+        throw new AppError("UXR-CLI-002", `Option ${arg} requires a target element label argument.`);
+      }
     } else if (arg === "--config" || arg === "-c") {
       i += 1;
       if (i < args.length) {
@@ -64,7 +73,18 @@ function parseCliArgs(args: string[]): CliArgs {
     }
   }
 
-  return { command, configPath, json, verbose, help, dryRun, maxPages, maxActions, maxDepth };
+  return {
+    command,
+    configPath,
+    json,
+    verbose,
+    help,
+    dryRun,
+    maxPages,
+    maxActions,
+    maxDepth,
+    startAction,
+  };
 }
 
 function printHelp(): void {
@@ -81,6 +101,7 @@ Commands:
 Options:
   -c, --config <path> Explicit path to configuration YAML file.
   --dry-run           Plan and record without executing device write actions.
+  --start-action <t>  Initial element label to tap before starting exploration (e.g. "I already have a wallet").
   --max-pages <n>     Maximum pages to explore before stopping.
   --max-actions <n>   Maximum interactions to execute.
   --max-depth <n>     Maximum recursion depth in navigation stack.
@@ -117,12 +138,20 @@ async function handleExplore(args: CliArgs): Promise<number> {
     level: args.verbose ? "debug" : config.logging.level,
   });
 
+  const startActions: string[] = args.startAction
+    ? args.startAction
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : (config.exploration.startActions ?? []);
+
   const device = createDeviceAdapter(config, logger);
   const explorer = new RecursiveExplorer(config, device, logger, {
     maxPages: args.maxPages,
     maxActions: args.maxActions,
     maxDepth: args.maxDepth,
     dryRun: config.exploration.dryRun,
+    startActions,
   });
 
   activeExplorer = explorer;

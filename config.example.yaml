@@ -64,6 +64,9 @@ exploration:
   actionRetryLimit: 2
   # Scrolls per page before the list is considered exhausted.
   scrollLimit: 10
+  # Optional list of element labels to tap sequentially before starting exploration
+  # e.g. ["Assets", "I already have a wallet"]
+  startActions: []
 
 agent:
   # Provider of the AI planner: "codex" | "claude" | "gemini" | "custom" | "none"

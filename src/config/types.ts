@@ -45,6 +45,7 @@ export interface ExplorationConfig {
   maxDepth: number;
   actionRetryLimit: number;
   scrollLimit: number;
+  startActions?: string[] | undefined;
 }
 
 export interface RunConfig {

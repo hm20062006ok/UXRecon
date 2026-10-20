@@ -6,6 +6,7 @@ export interface ExplorerConfigOptions {
   maxDepth?: number | undefined;
   actionRetryLimit?: number | undefined;
   dryRun?: boolean | undefined;
+  startActions?: string[] | undefined;
 }
 
 export interface ExplorationRunResult {

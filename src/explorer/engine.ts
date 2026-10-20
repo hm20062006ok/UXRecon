@@ -39,6 +39,7 @@ export class RecursiveExplorer {
   private readonly maxPages: number;
   private readonly maxActions: number;
   private readonly maxDepth: number;
+  private readonly startActions: string[];
 
   private actionSequence = 0;
   private isInterrupted = false;
@@ -69,6 +70,7 @@ export class RecursiveExplorer {
     this.maxPages = options.maxPages ?? config.exploration.maxPages;
     this.maxActions = options.maxActions ?? config.exploration.maxActions;
     this.maxDepth = options.maxDepth ?? config.exploration.maxDepth;
+    this.startActions = options.startActions ?? config.exploration.startActions ?? [];
   }
 
   interrupt(): void {
@@ -84,6 +86,7 @@ export class RecursiveExplorer {
       maxActions: this.maxActions,
       maxDepth: this.maxDepth,
       dryRun: this.config.exploration.dryRun,
+      startActions: this.startActions,
     });
 
     try {
@@ -99,6 +102,37 @@ export class RecursiveExplorer {
         durationMs: Date.now() - startTime,
         stopReason: `Device connection failure: ${message}`,
       };
+    }
+
+    // Optional bootstrap navigation to user-specified starting page
+    if (this.startActions.length > 0 && !this.config.exploration.dryRun) {
+      this.logger.info("Executing bootstrap start actions to reach target initial page", {
+        actions: this.startActions,
+      });
+
+      for (const targetText of this.startActions) {
+        if (this.isInterrupted) break;
+        try {
+          const xml = await this.device.getPageSource().catch(() => "");
+          const parsed = parsePageSource(xml);
+          const match = parsed.elements.find((el) => {
+            const combined = `${el.label} ${el.name} ${el.value}`.toLowerCase();
+            return combined.includes(targetText.toLowerCase());
+          });
+
+          if (match) {
+            this.logger.info(`Bootstrapping: tapping "${targetText}"`, { elementId: match.elementId });
+            await this.device.tap(match);
+            await new Promise((r) => setTimeout(r, 2000));
+          } else {
+            this.logger.warn(`Bootstrap start action target "${targetText}" not found on current screen`);
+          }
+        } catch (err) {
+          this.logger.warn(`Failed during bootstrap action "${targetText}"`, {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
     }
 
     const pageStack: PageState[] = [];

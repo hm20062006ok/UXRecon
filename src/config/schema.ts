@@ -67,6 +67,7 @@ const explorationSchema = z.strictObject({
   maxDepth: z.number().int().min(1).max(20).default(6),
   actionRetryLimit: z.number().int().min(0).max(5).default(2),
   scrollLimit: z.number().int().min(1).max(100).default(10),
+  startActions: z.array(z.string()).default([]),
 });
 
 const runSchema = z.strictObject({
