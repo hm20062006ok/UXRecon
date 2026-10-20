@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.appium/
+artifacts/
+runs/
+*.log
+.DS_Store
+docs/
+PLAN.md

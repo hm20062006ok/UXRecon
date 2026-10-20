@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.appium/
+.env
+.env.*
+!.env.example
+config.yaml
+uxr.config.yaml
+artifacts/
+runs/
+*.log
+.DS_Store
+.workbuddy-ai/

@@ -1,0 +1,90 @@
+# iPhone UX Explorer configuration
+#
+# Copy this file to `uxr.config.yaml` (or `config.yaml`) and fill in the device
+# and app values. Every field below is shown with its default; delete a line to
+# fall back to that default.
+#
+# `${VAR}` and `${VAR:-fallback}` are substituted from the environment before
+# validation. Use `$${VAR}` when you want a literal `${VAR}`.
+#
+# Secrets never belong in this file. Device identifiers are masked in logs and
+# in config.snapshot.json, but they are still stored in plain text on disk.
+
+# Must match the schema version this build understands.
+schemaVersion: 1
+
+device:
+  # Required. Full UDID of the iPhone, from `xcrun devicectl list devices`.
+  udid: ${UXR_DEVICE_UDID}
+  # Display name only; it is not used to select the device.
+  name: iPhone
+  # Required. iOS version, e.g. "27.0". Must match the device exactly.
+  # Quoted so a value like 27.0 stays a string instead of becoming a float.
+  platformVersion: "${UXR_PLATFORM_VERSION}"
+
+app:
+  # Required. Bundle id of the app under exploration.
+  bundleId: ${UXR_TARGET_BUNDLE_ID:-com.global.wallet.ios}
+
+appium:
+  host: 127.0.0.1
+  port: 4723
+  basePath: /
+  # Reuse an already-running WebDriverAgent instead of building one. When set,
+  # xcodeOrgId and updatedWDABundleId become optional.
+  webDriverAgentUrl: null
+  # Required unless webDriverAgentUrl is set. Apple Developer Team ID.
+  xcodeOrgId: ${UXR_XCODE_ORG_ID:-}
+  xcodeSigningId: Apple Development
+  # Required unless webDriverAgentUrl is set. Must be unique per machine.
+  updatedWDABundleId: ${UXR_WDA_BUNDLE_ID:-}
+  # Let Xcode register a new device on the team automatically.
+  allowProvisioningDeviceRegistration: false
+  wdaLaunchTimeoutMs: 120000
+  wdaConnectionTimeoutMs: 120000
+  newCommandTimeoutSec: 180
+
+safety:
+  # Permit taps and interactions freely
+  allowSafeTap: true
+  # Default-deny restrictions (PLAN.md 7.1) removed. Provide custom keywords here if needed.
+  denyKeywords: []
+  # Must-confirm restrictions (PLAN.md 7.2) removed. Provide custom keywords here if needed.
+  confirmKeywords: []
+  # Extra regular expressions applied to every log line and artifact string.
+  redactPatterns: []
+
+exploration:
+  # true records the plan without performing any device write.
+  dryRun: true
+  maxPages: 50
+  maxActions: 500
+  maxDepth: 6
+  # Retries per action before it is recorded as failed.
+  actionRetryLimit: 2
+  # Scrolls per page before the list is considered exhausted.
+  scrollLimit: 10
+
+agent:
+  # Provider of the AI planner: "codex" | "claude" | "gemini" | "custom" | "none"
+  # Set to "none" to use the deterministic rule-based fallback planner without any AI agent.
+  provider: ${UXR_AGENT_PROVIDER:-codex}
+  # Executable command binary or script path invoked by the planner adapter.
+  command: ${UXR_AGENT_COMMAND:-codex}
+  # Optional model override (e.g. "gpt-4o", "claude-3-7-sonnet", "gemini-2.5-pro").
+  model: null
+  # Additional CLI arguments passed to the agent command.
+  args: []
+  # Timeout in milliseconds per agent invocation.
+  timeoutMs: 60000
+
+run:
+  # Runs are written to <outputDir>/<project>/<run-id>/.
+  outputDir: runs
+  project: default
+
+logging:
+  # debug | info | warn | error
+  level: info
+  # Append a machine-readable logs/exploration.jsonl alongside console output.
+  jsonl: true
