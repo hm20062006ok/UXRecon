@@ -35,9 +35,17 @@ export function parsePlannedAction(rawJson: unknown): PlannedAction {
     const raw = rawJson as Record<string, unknown>;
     const normalized: Record<string, unknown> = { ...raw };
 
-    if (!normalized.kind && typeof normalized.action === "string") {
-      normalized.kind = normalized.action;
+    if (typeof normalized.action === "string") {
+      if (!normalized.kind) {
+        normalized.kind = normalized.action;
+      }
       delete normalized.action;
+    }
+    if (typeof normalized.kind === "string") {
+      normalized.kind = normalized.kind.toLowerCase();
+      if (normalized.kind === "click") {
+        normalized.kind = "tap";
+      }
     }
     if (!normalized.targetElementId && typeof normalized.elementId === "string") {
       normalized.targetElementId = normalized.elementId;
