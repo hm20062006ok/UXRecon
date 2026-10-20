@@ -9,6 +9,7 @@ config.yaml
 uxr.config.yaml
 artifacts/
 runs/
+tmp/
 *.log
 .DS_Store
 .workbuddy-ai/

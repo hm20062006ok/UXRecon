@@ -82,6 +82,8 @@ export interface PlannedAction {
   expectedEffect: string;
   risk: ActionRisk;
   confidence: number;
+  agentThought?: string | undefined;
+  screenDescription?: string | undefined;
 }
 
 export type PageStatus = "new" | "exploring" | "complete" | "blocked";
@@ -124,4 +126,6 @@ export interface Transition {
   error?: string | undefined;
   recovery?: string | undefined;
   uxObservations: string[];
+  agentThought?: string | undefined;
+  screenDescription?: string | undefined;
 }

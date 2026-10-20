@@ -7,6 +7,7 @@ export interface ExplorerConfigOptions {
   actionRetryLimit?: number | undefined;
   dryRun?: boolean | undefined;
   startActions?: string[] | undefined;
+  goal?: string | undefined;
 }
 
 export interface ExplorationRunResult {

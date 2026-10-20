@@ -26,6 +26,8 @@ export const plannedActionSchema = z.strictObject({
   expectedEffect: z.string().min(1, "expectedEffect must state the predicted screen change"),
   risk: actionRiskSchema.default("low"),
   confidence: z.number().min(0).max(1).default(1.0),
+  agentThought: z.string().optional(),
+  screenDescription: z.string().optional(),
 });
 
 export function parsePlannedAction(rawJson: unknown): PlannedAction {
@@ -41,6 +43,25 @@ export function parsePlannedAction(rawJson: unknown): PlannedAction {
       normalized.targetElementId = normalized.elementId;
       delete normalized.elementId;
     }
+    if (!normalized.agentThought) {
+      if (typeof normalized.thought === "string") {
+        normalized.agentThought = normalized.thought;
+      } else if (typeof normalized.reasoning === "string") {
+        normalized.agentThought = normalized.reasoning;
+      }
+    }
+    delete normalized.thought;
+    delete normalized.reasoning;
+
+    if (!normalized.screenDescription) {
+      if (typeof normalized.screen_description === "string") {
+        normalized.screenDescription = normalized.screen_description;
+      } else if (typeof normalized.description === "string") {
+        normalized.screenDescription = normalized.description;
+      }
+    }
+    delete normalized.screen_description;
+    delete normalized.description;
     if (!normalized.expectedEffect) {
       if (typeof normalized.expected_effect === "string") {
         normalized.expectedEffect = normalized.expected_effect;
@@ -51,7 +72,10 @@ export function parsePlannedAction(rawJson: unknown): PlannedAction {
       }
     }
     if (!normalized.reason) {
-      normalized.reason = "Explore accessible interaction element";
+      normalized.reason =
+        typeof normalized.thought === "string"
+          ? normalized.thought
+          : "Explore accessible interaction element";
     }
 
     return plannedActionSchema.parse(normalized);

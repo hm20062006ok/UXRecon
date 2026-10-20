@@ -9,6 +9,9 @@ export interface PlanContext {
   screenshotPath?: string | undefined;
   depth: number;
   maxDepth: number;
+  goal?: string | undefined;
+  actionHistory?:
+    Array<{ action: string; target?: string | undefined; reason?: string | undefined }> | undefined;
 }
 
 export interface Planner {

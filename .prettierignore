@@ -4,6 +4,7 @@ coverage/
 .appium/
 artifacts/
 runs/
+tmp/
 *.log
 .DS_Store
 docs/

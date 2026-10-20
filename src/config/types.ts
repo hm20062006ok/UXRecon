@@ -46,6 +46,7 @@ export interface ExplorationConfig {
   actionRetryLimit: number;
   scrollLimit: number;
   startActions?: string[] | undefined;
+  goal?: string | undefined;
 }
 
 export interface RunConfig {

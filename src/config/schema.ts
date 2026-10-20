@@ -68,6 +68,7 @@ const explorationSchema = z.strictObject({
   actionRetryLimit: z.number().int().min(0).max(5).default(2),
   scrollLimit: z.number().int().min(1).max(100).default(10),
   startActions: z.array(z.string()).default([]),
+  goal: z.string().optional(),
 });
 
 const runSchema = z.strictObject({

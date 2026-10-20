@@ -17,6 +17,7 @@ interface CliArgs {
   maxActions?: number | undefined;
   maxDepth?: number | undefined;
   startAction?: string | undefined;
+  goal?: string | undefined;
 }
 
 function parseCliArgs(args: string[]): CliArgs {
@@ -30,6 +31,7 @@ function parseCliArgs(args: string[]): CliArgs {
   let maxActions: number | undefined;
   let maxDepth: number | undefined;
   let startAction: string | undefined;
+  let goal: string | undefined;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i]!;
@@ -50,6 +52,13 @@ function parseCliArgs(args: string[]): CliArgs {
     } else if (arg === "--max-depth") {
       i += 1;
       maxDepth = Number(args[i]);
+    } else if (arg === "--goal" || arg === "-g") {
+      i += 1;
+      if (i < args.length) {
+        goal = args[i];
+      } else {
+        throw new AppError("UXR-CLI-002", `Option ${arg} requires a goal description argument.`);
+      }
     } else if (arg === "--start-action" || arg === "--initial-tap") {
       i += 1;
       if (i < args.length) {
@@ -84,6 +93,7 @@ function parseCliArgs(args: string[]): CliArgs {
     maxActions,
     maxDepth,
     startAction,
+    goal,
   };
 }
 
@@ -101,6 +111,7 @@ Commands:
 Options:
   -c, --config <path> Explicit path to configuration YAML file.
   --dry-run           Plan and record without executing device write actions.
+  -g, --goal <text>   Goal / task description for the AI Agent (e.g. "点击 Assets -- I don't have a wallet，进入页面后提取完整交互").
   --start-action <t>  Initial element label to tap before starting exploration (e.g. "I already have a wallet").
   --max-pages <n>     Maximum pages to explore before stopping.
   --max-actions <n>   Maximum interactions to execute.
@@ -152,6 +163,7 @@ async function handleExplore(args: CliArgs): Promise<number> {
     maxDepth: args.maxDepth,
     dryRun: config.exploration.dryRun,
     startActions,
+    goal: args.goal ?? config.exploration.goal,
   });
 
   activeExplorer = explorer;

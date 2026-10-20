@@ -49,6 +49,23 @@ describe("plannedActionSchema / parsePlannedAction", () => {
     expect(action.reason).toBe("Explore market view");
   });
 
+  it("parses thought and screenDescription into agentThought and screenDescription", () => {
+    const action = parsePlannedAction({
+      action: "tap",
+      elementId: "el-2",
+      thought: "User instructed to tap 'I don't have a wallet'",
+      screen_description: "Welcome screen showing wallet options",
+      reason: "Start wallet creation flow",
+      expected_effect: "Navigate to setup view",
+    });
+
+    expect(action.kind).toBe("tap");
+    expect(action.targetElementId).toBe("el-2");
+    expect(action.agentThought).toBe("User instructed to tap 'I don't have a wallet'");
+    expect(action.screenDescription).toBe("Welcome screen showing wallet options");
+    expect(action.reason).toBe("Start wallet creation flow");
+  });
+
   it("rejects unknown action kinds or extra unknown properties", () => {
     expect(() =>
       parsePlannedAction({
@@ -143,6 +160,26 @@ describe("buildPlannerPrompt", () => {
     expect(parsed.currentPageId).toBe("welcome");
     expect(parsed.availableElements[0].semanticId).toBe("btn-start");
     expect(parsed.instructions).toBeDefined();
+  });
+
+  it("includes userGoal and actionHistory when provided", () => {
+    const el = makeElement("e1", "btn-start");
+    const prompt = buildPlannerPrompt({
+      pageId: "welcome",
+      elements: [el],
+      interactiveElements: [el],
+      visitedActionKeys: [],
+      pendingActionKeys: [],
+      depth: 1,
+      maxDepth: 4,
+      goal: "点击 Assets -- I don't have a wallet",
+      actionHistory: [{ action: "tap", target: "Assets", reason: "Go to Assets tab" }],
+    });
+
+    const parsed = JSON.parse(prompt);
+    expect(parsed.userGoal).toBe("点击 Assets -- I don't have a wallet");
+    expect(parsed.actionHistory).toHaveLength(1);
+    expect(parsed.actionHistory[0].action).toBe("tap");
   });
 });
 

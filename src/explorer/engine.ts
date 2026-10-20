@@ -4,6 +4,7 @@ import {
   auditPageUx,
   extractDesignTokens,
   generateGalleryHtml,
+  generateReplicationBlueprint,
   generateScreenSpec,
 } from "../analysis/index.js";
 import type { Config } from "../config/types.js";
@@ -40,6 +41,7 @@ export class RecursiveExplorer {
   private readonly maxActions: number;
   private readonly maxDepth: number;
   private readonly startActions: string[];
+  private readonly goal?: string | undefined;
 
   private actionSequence = 0;
   private isInterrupted = false;
@@ -47,6 +49,11 @@ export class RecursiveExplorer {
   private readonly transitions: Transition[] = [];
   private readonly pageElementsMap: Map<string, UIElement[]> = new Map();
   private readonly observationMap: Map<string, Observation> = new Map();
+  private readonly actionHistory: Array<{
+    action: string;
+    target?: string | undefined;
+    reason?: string | undefined;
+  }> = [];
   private lastViewport = { width: 393, height: 852 };
 
   constructor(
@@ -71,6 +78,7 @@ export class RecursiveExplorer {
     this.maxActions = options.maxActions ?? config.exploration.maxActions;
     this.maxDepth = options.maxDepth ?? config.exploration.maxDepth;
     this.startActions = options.startActions ?? config.exploration.startActions ?? [];
+    this.goal = options.goal ?? config.exploration.goal;
   }
 
   interrupt(): void {
@@ -87,6 +95,7 @@ export class RecursiveExplorer {
       maxDepth: this.maxDepth,
       dryRun: this.config.exploration.dryRun,
       startActions: this.startActions,
+      goal: this.goal,
     });
 
     try {
@@ -189,6 +198,8 @@ export class RecursiveExplorer {
           screenshotPath: obs.screenshotPath,
           depth: currentDepth,
           maxDepth: this.maxDepth,
+          goal: this.goal,
+          actionHistory: this.actionHistory.slice(-5),
         });
 
         if (plannedAction.kind === "stop") {
@@ -196,10 +207,31 @@ export class RecursiveExplorer {
           break;
         }
 
-        // 6. Safety Evaluation
-        const targetElement = plannedAction.targetElementId
-          ? parsed.elements.find((el) => el.elementId === plannedAction.targetElementId)
-          : undefined;
+        // 6. Safety Evaluation & Target Element Resolution
+        let targetElement: UIElement | undefined;
+        if (plannedAction.targetElementId) {
+          targetElement = parsed.elements.find((el) => el.elementId === plannedAction.targetElementId);
+        }
+        if (!targetElement && plannedAction.targetSemanticId) {
+          targetElement = parsed.elements.find((el) => el.semanticId === plannedAction.targetSemanticId);
+        }
+        if (!targetElement && (plannedAction.targetElementId || plannedAction.targetSemanticId)) {
+          const needle = (
+            plannedAction.targetElementId ||
+            plannedAction.targetSemanticId ||
+            ""
+          ).toLowerCase();
+          targetElement = parsed.elements.find((el) => {
+            const haystack = `${el.label} ${el.name} ${el.value}`.toLowerCase();
+            return haystack.includes(needle);
+          });
+        }
+
+        this.actionHistory.push({
+          action: plannedAction.kind,
+          target: targetElement?.label || plannedAction.targetElementId || plannedAction.targetSemanticId,
+          reason: plannedAction.reason,
+        });
 
         const safetyResult = this.safety.evaluate(plannedAction, targetElement);
         const actionKey = actionKeyFromPlannedAction(pageState.fingerprints.structural, plannedAction);
@@ -410,6 +442,8 @@ export class RecursiveExplorer {
       result,
       error,
       uxObservations: [],
+      agentThought: action.agentThought,
+      screenDescription: action.screenDescription,
     };
 
     this.transitions.push(transition);
@@ -473,11 +507,27 @@ export class RecursiveExplorer {
       );
       writeFileSync(path.join(this.runContext.runDir, "gallery.html"), galleryHtml, "utf8");
 
-      this.logger.info("Successfully generated post-exploration specs, tokens, audit, and gallery.html", {
+      generateReplicationBlueprint({
         runDir: this.runContext.runDir,
-        screensCount: allPages.length,
-        transitionsCount: this.transitions.length,
+        appName: this.config.app.bundleId,
+        bundleId: this.config.app.bundleId,
+        viewport: this.lastViewport,
+        goal: this.goal,
+        pages: allPages,
+        pageElementsMap: this.pageElementsMap,
+        observationMap: this.observationMap,
+        transitions: this.transitions,
+        designTokens: tokens,
       });
+
+      this.logger.info(
+        "Successfully generated post-exploration specs, tokens, audit, gallery.html, and replication blueprint",
+        {
+          runDir: this.runContext.runDir,
+          screensCount: allPages.length,
+          transitionsCount: this.transitions.length,
+        },
+      );
     } catch (error) {
       this.logger.warn("Failed to generate some post-exploration artifacts", {
         error: error instanceof Error ? error.message : String(error),
